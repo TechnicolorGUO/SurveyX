@@ -9,10 +9,16 @@ BASE_DIR = FILE_PATH.parent.parent.parent
 # os.environ["HF_ENDPOINT"] = "https://hf-mirror.com" # Uncomment this line if you want to use a specific Hugging Face mirror
 # os.environ["HF_HOME"] = os.path.expanduser("~/hf_cache/")
 
+# OpenAI API 配置
 REMOTE_URL = "https://openai.com/v1/chat/completions"
 TOKEN = "your token here"
 DEFAULT_CHATAGENT_MODEL = "gpt-4o-mini"
 ADVANCED_CHATAGENT_MODEL = "gpt-4o"
+
+# 阿里云 API 配置
+ALIYUN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+ALIYUN_API_KEY = os.getenv("DASHSCOPE_API_KEY", "your aliyun api key here")
+ALIYUN_DEFAULT_MODEL = "qwen-plus"
 
 LOCAL_URL = "LOCAL_URL"
 LOCAL_LLM = "LOCAL_LLM"

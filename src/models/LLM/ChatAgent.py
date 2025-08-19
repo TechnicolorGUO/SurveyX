@@ -26,6 +26,9 @@ from src.configs.config import (
     BASE_DIR,
     DEFAULT_CHATAGENT_MODEL,
     CHAT_AGENT_WORKERS,
+    ALIYUN_BASE_URL,
+    ALIYUN_API_KEY,
+    ALIYUN_DEFAULT_MODEL,
 )
 from src.configs.constants import OUTPUT_DIR
 
@@ -49,14 +52,27 @@ class ChatAgent:
         token: str = TOKEN,
         remote_url: str = REMOTE_URL,
         local_url: str = LOCAL_URL,
+        use_aliyun: bool = False,
+        aliyun_api_key: str = ALIYUN_API_KEY,
     ) -> None:
         self.remote_url = remote_url
         self.token = token
         self.local_url = local_url
-        self.header = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}",
-        }
+        self.use_aliyun = use_aliyun
+        self.aliyun_api_key = aliyun_api_key
+        
+        # 根据是否使用阿里云设置不同的header
+        if use_aliyun:
+            self.header = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {aliyun_api_key}",
+            }
+        else:
+            self.header = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            }
+            
         self.batch_workers = CHAT_AGENT_WORKERS
         self.token_monitor = token_monitor
 
@@ -72,11 +88,21 @@ class ChatAgent:
         local_images: list[Path] = None,
         temperature: float = 0.5,
         debug: bool = False,
-        model=DEFAULT_CHATAGENT_MODEL,
+        model=None,
     ) -> str:
         """chat with remote LLM, return result."""
-        url = self.remote_url
+        # 根据是否使用阿里云选择URL和模型
+        if self.use_aliyun:
+            url = f"{ALIYUN_BASE_URL}/chat/completions"
+            if model is None:
+                model = ALIYUN_DEFAULT_MODEL
+        else:
+            url = self.remote_url
+            if model is None:
+                model = DEFAULT_CHATAGENT_MODEL
+                
         header = self.header
+        
         # text content
         messages = [{"role": "user", "content": text_content}]
         # insert image urls ----
@@ -165,7 +191,7 @@ class ChatAgent:
         content,
         temperature: float = 0.5,
         debug: bool = False,
-        model=DEFAULT_CHATAGENT_MODEL,
+        model=None,
     ):
         return index, self.remote_chat(
             text_content=content,
@@ -182,6 +208,7 @@ class ChatAgent:
         desc: str = "batch_chating...",
         workers: int = CHAT_AGENT_WORKERS,
         temperature: float = 0.5,
+        model=None,
     ) -> list[str]:
         """
         开启多线程进行对话
@@ -192,7 +219,7 @@ class ChatAgent:
         with ThreadPoolExecutor(max_workers=workers) as executor:
             # 提交任务
             future_l = [
-                executor.submit(self.__remote_chat, i, prompt_l[i], temperature)
+                executor.submit(self.__remote_chat, i, prompt_l[i], temperature, False, model)
                 for i in range(len(prompt_l))
             ]
             # 领取任务结果
@@ -307,6 +334,13 @@ class ChatAgent:
 
 
 if __name__ == "__main__":
+    # 使用阿里云API的示例
+    print("=== 阿里云API示例 ===")
+    aliyun_agent = ChatAgent(use_aliyun=True)
+    result = aliyun_agent.remote_chat(text_content="你好，请介绍一下你自己")
+    print(f"阿里云API结果: {result}")
+    
+    print("\n=== OpenAI API示例 ===")
     agent = ChatAgent()
     text_content = "图片里面有什么"
 
